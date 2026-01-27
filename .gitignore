@@ -41,7 +41,7 @@ build/
 # Spring Boot / application files
 # ================================
 # Ignorar application.properties si contiene credenciales sensibles
-src/main/resources/application.properties
+#src/main/resources/application.properties
 
 # ================================
 # OS Files
