@@ -13,7 +13,14 @@ import lombok.Setter;
 @Entity
 @Table(name = "songs")
 public class Song {
-
+    /*
+    Explicacion de la clase:
+        Representa una tabla en la base de datos.
+        Cada atributo es una columna.
+        JPA(Jakarta Persistence API) usa esta clase para crear y mapear la tabla
+        Solo se usa dentro del backend.
+        Nunca debería enviarse directamente al cliente para eso usamos la clase SongDto.
+     */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -28,10 +35,10 @@ public class Song {
     private String album;
 
     @Column(name = "trackNumber")
-    private Integer trackNumber; // USAR INTEGER PARA CAMPOS OPCIONALES // INT NO PUEDE SER NULL
+    private Integer trackNumber;
 
     @Column(name = "duration", nullable = false)
-    private int duration; // EN SEGUNDOS
+    private Integer duration; // EN SEGUNDOS
 
     @Column(name = "year")
     private Integer year;
@@ -42,7 +49,7 @@ public class Song {
     @Column(name = "filePath")
     private String filePath;
 
-    //METADATOS OPCIONALES? JSON?
+    //METADATOS OPCIONALES?
     /*
     genres
     explicit
