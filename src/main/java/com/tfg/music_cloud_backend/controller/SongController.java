@@ -1,7 +1,6 @@
 package com.tfg.music_cloud_backend.controller;
 
 import com.tfg.music_cloud_backend.dto.SongDto;
-import com.tfg.music_cloud_backend.entity.Song;
 import com.tfg.music_cloud_backend.service.SongService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -33,7 +32,7 @@ public class SongController {
 
 
     */
-    private SongService songService;
+    private final SongService songService;
 
     // Build Add Song REST API
     @PostMapping
@@ -68,7 +67,7 @@ public class SongController {
     @DeleteMapping("{id}")
     public ResponseEntity<String> deleteSong(@PathVariable("id") Long songId) {
         songService.deleteSong(songId);
-        return ResponseEntity.ok("Song deleted successfully!");
+        return ResponseEntity.noContent().build();
     }
 
 

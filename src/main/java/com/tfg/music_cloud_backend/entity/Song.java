@@ -28,26 +28,18 @@ public class Song {
     @Column(name = "title", nullable = false)
     private String title;
 
-    @Column(name = "artist", nullable = false) // DE MOMENTO STRING PUEDE CONVERTIRSE EN TABLA
-    private String artist;
-
-    @Column(name = "album")
-    private String album;
-
     @Column(name = "trackNumber")
     private Integer trackNumber;
 
     @Column(name = "duration", nullable = false)
     private Integer duration; // EN SEGUNDOS
 
-    @Column(name = "year")
-    private Integer year;
-
-    @Column(name = "coverPath")
-    private String coverPath; //MOSTRAR CARATULA
-
     @Column(name = "filePath")
     private String filePath;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "album_id", nullable = true) // Creamos una columna album_id en la tabla songs y la usamos como clave foranea hacia album.id
+    private Album album; // No significa que JPA guarde un objeto completo, Hibernate lo traduce a album_id (FK)
 
     //METADATOS OPCIONALES?
     /*

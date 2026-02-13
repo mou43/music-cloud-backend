@@ -24,11 +24,10 @@ public class SongDto {
 
     private Long id;
     private String title;
-    private String artist;
-    private String album;
     private Integer trackNumber;
     private Integer duration;
-    private Integer year;
-    private String coverPath;
     private String filePath;
+    private Long albumId;
+    private String albumTitle;
+    private String artistName;
 }

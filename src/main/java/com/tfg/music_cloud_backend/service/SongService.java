@@ -17,7 +17,7 @@ public interface SongService {
 
     List<SongDto> getAllSongs();
 
-    SongDto updateSong(Long songId, SongDto updatedSong);
+    SongDto updateSong(Long songId, SongDto updatedSongDto);
 
     void deleteSong(Long songId);
 

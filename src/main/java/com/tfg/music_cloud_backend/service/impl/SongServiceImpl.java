@@ -1,15 +1,16 @@
 package com.tfg.music_cloud_backend.service.impl;
 
 import com.tfg.music_cloud_backend.dto.SongDto;
+import com.tfg.music_cloud_backend.entity.Album;
 import com.tfg.music_cloud_backend.entity.Song;
 import com.tfg.music_cloud_backend.exception.ResourceNotFoundException;
 import com.tfg.music_cloud_backend.mapper.SongMapper;
+import com.tfg.music_cloud_backend.repository.AlbumRepository;
 import com.tfg.music_cloud_backend.repository.SongRepository;
 import com.tfg.music_cloud_backend.service.SongService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.lang.module.ResolutionException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -26,50 +27,73 @@ public class SongServiceImpl implements SongService {
             4- Lo convierte otra vez a DTO
             5- Lo devuelve
     */
-    private SongRepository songRepository;
+    private final SongRepository songRepository;
+    private final AlbumRepository albumRepository;
 
     @Override
     public SongDto createSong(SongDto songDto) {
+        // Validar que Album exista
+        Album album = albumRepository.findById(songDto.getAlbumId())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Album does not exist with given id: " + songDto.getAlbumId()
+                ));
 
-        Song song = SongMapper.mapToSong(songDto);
+        // Mapear DTO -> Entity
+        Song song = SongMapper.mapToSong(songDto, album);
+
+        // Guardar en DB
         Song savedSong = songRepository.save(song);
 
+        // Mapear Entity -> DTO
         return SongMapper.mapToSongDto(savedSong);
     }
 
     @Override
     public SongDto getSongById(Long songId) {
         Song song = songRepository.findById(songId)
-                .orElseThrow(() -> new ResourceNotFoundException("Song does not exist with given id: " + songId));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Song does not exist with given id: " + songId
+                ));
         return SongMapper.mapToSongDto(song);
     }
 
     @Override
     public List<SongDto> getAllSongs() {
         List<Song> songs = songRepository.findAll();
-        return songs.stream().map((song) -> SongMapper.mapToSongDto(song))
+        return songs.stream()
+                .map((song) -> SongMapper.mapToSongDto(song))
                 .collect(Collectors.toList());
     }
 
     @Override
-    public SongDto updateSong(Long songId, SongDto updatedSong) {
-        Song song = songRepository.findById(songId).orElseThrow(
-                () -> new ResourceNotFoundException("Song does not exist with given id: " + songId)
-        );
+    public SongDto updateSong(Long songId, SongDto updatedSongDto) {
+        Song song = songRepository.findById(songId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Song does not exist with given id: " + songId
+                ));
 
-        song.setTitle(updatedSong.getTitle());
-        song.setArtist(updatedSong.getArtist());
-        song.setAlbum(updatedSong.getAlbum());
-        song.setTrackNumber(updatedSong.getTrackNumber());
-        song.setDuration(updatedSong.getDuration());
-        song.setYear(updatedSong.getYear());
-        song.setCoverPath(updatedSong.getCoverPath());
-        song.setFilePath(updatedSong.getFilePath());
+        song.setTitle(updatedSongDto.getTitle());
+        song.setTrackNumber(updatedSongDto.getTrackNumber());
+        song.setDuration(updatedSongDto.getDuration());
+        song.setFilePath(updatedSongDto.getFilePath());
 
-        Song updatedSongObj = songRepository.save(song);
+        // Actualizar Album si viene un albumId diferente
+        if (updatedSongDto.getAlbumId() != null
+                && (song.getAlbum() == null || !song.getAlbum().getId().equals(updatedSongDto.getAlbumId()))) {
+
+            Album album = albumRepository.findById(updatedSongDto.getAlbumId())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Album does not exist with given id: " + updatedSongDto.getAlbumId()
+                    ));
+
+            song.setAlbum(album);
+        }
 
 
-        return SongMapper.mapToSongDto(updatedSongObj);
+        Song savedSong = songRepository.save(song);
+
+
+        return SongMapper.mapToSongDto(savedSong);
     }
 
     @Override
