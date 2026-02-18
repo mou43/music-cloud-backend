@@ -32,7 +32,8 @@ public class Album {
 
     @ManyToOne(fetch = FetchType.LAZY)
     // El lado que tiene @JoinColumn es el dueño de la relación.
-    @JoinColumn(name = "artist_id", nullable = false) // Creamos una columna artist_id en la tabla albums y la usamos como clave foranea hacia artists.id
+    @JoinColumn(name = "artist_id", nullable = false)
+    // Creamos una columna artist_id en la tabla albums y la usamos como clave foranea hacia artists.id
     private Artist artist; // No significa que JPA guarde un objeto completo, Hibernate lo traduce a artist_id (FK)
 
     @OneToMany(mappedBy = "album", cascade = CascadeType.ALL)

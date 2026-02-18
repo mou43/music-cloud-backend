@@ -1,0 +1,21 @@
+package com.tfg.music_cloud_backend.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.time.LocalDateTime;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class PlaylistSongDto {
+
+    private Long id;
+    private Long playlistId;
+    private Long songId;
+    private LocalDateTime addedAt;
+
+}
