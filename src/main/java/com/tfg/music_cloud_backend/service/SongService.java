@@ -1,6 +1,8 @@
 package com.tfg.music_cloud_backend.service;
 
 import com.tfg.music_cloud_backend.dto.SongDto;
+import org.springframework.core.io.Resource;
+import org.springframework.http.ResponseEntity;
 
 import java.util.List;
 
@@ -20,5 +22,10 @@ public interface SongService {
     SongDto updateSong(Long songId, SongDto updatedSongDto);
 
     void deleteSong(Long songId);
+
+    ResponseEntity<Resource> streamSong(Long songId, String rangeHeader);
+
+    // IMPLEMENTAR EN EL FUTURO
+    //SongDto updateSongStatus(Long songId, SongStatus status);
 
 }

@@ -3,6 +3,7 @@ package com.tfg.music_cloud_backend.mapper;
 import com.tfg.music_cloud_backend.dto.SongDto;
 import com.tfg.music_cloud_backend.entity.Album;
 import com.tfg.music_cloud_backend.entity.Song;
+import com.tfg.music_cloud_backend.entity.SongStatus;
 
 public class SongMapper {
     /*
@@ -23,6 +24,7 @@ public class SongMapper {
                 song.getTrackNumber(),
                 song.getDuration(),
                 song.getFilePath(),
+                song.getStatus(),
                 album != null ? album.getId() : null,
                 album != null ? album.getTitle() : null,
                 album != null && album.getArtist() != null ? album.getArtist().getName() : null
@@ -38,6 +40,7 @@ public class SongMapper {
         song.setTrackNumber(songDto.getTrackNumber());
         song.setDuration(songDto.getDuration());
         song.setFilePath(songDto.getFilePath());
+        song.setStatus(songDto.getStatus() != null ? songDto.getStatus() : SongStatus.PENDING);
         song.setAlbum(album); // ahora asociamos la entidad Album directamente
 
         return song;
