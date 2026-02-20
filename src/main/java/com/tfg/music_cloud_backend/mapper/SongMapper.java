@@ -24,6 +24,7 @@ public class SongMapper {
                 song.getTrackNumber(),
                 song.getDuration(),
                 song.getFilePath(),
+                song.getVideoId(),
                 song.getStatus(),
                 album != null ? album.getId() : null,
                 album != null ? album.getTitle() : null,
@@ -40,6 +41,7 @@ public class SongMapper {
         song.setTrackNumber(songDto.getTrackNumber());
         song.setDuration(songDto.getDuration());
         song.setFilePath(songDto.getFilePath());
+        song.setVideoId(songDto.getVideoId());
         song.setStatus(songDto.getStatus() != null ? songDto.getStatus() : SongStatus.PENDING);
         song.setAlbum(album); // ahora asociamos la entidad Album directamente
 

@@ -37,6 +37,9 @@ public class Song {
     @Column(name = "filePath")
     private String filePath; // null hasta que status sea READY
 
+    @Column(name = "video_id", unique = true) // Este atributo me permite evitar duplicados a la hora de descargar albumes enteros de yt
+    private String videoId;                   // que contengan alguna cancion que ya estaba descargada previamente en la bdd
+
     @Enumerated(EnumType.STRING) // Guarda "PENDING" en vez de 0, 1, 2... mucho más legible en BDD
     @Column(name = "status", nullable = false)
     private SongStatus status = SongStatus.PENDING; // Por defecto toda canción nueva es PENDING

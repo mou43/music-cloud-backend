@@ -28,6 +28,7 @@ public class SongDto {
     private Integer trackNumber;
     private Integer duration;
     private String filePath;
+    private String videoId;
     private SongStatus status;
     private Long albumId;
     private String albumTitle;

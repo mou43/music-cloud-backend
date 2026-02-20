@@ -133,6 +133,16 @@ public class SongServiceImpl implements SongService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Song does not exist with given id: " + songId));
 
+        // Si tiene archivo físico lo borramos también
+        if (song.getFilePath() != null) {
+            try {
+                Files.deleteIfExists(Paths.get(song.getFilePath()));
+            } catch (IOException e) {
+                // Si falla el borrado físico no interrumpimos el borrado de BDD
+                System.out.println("No se pudo borrar el archivo: " + song.getFilePath());
+            }
+        }
+
         songRepository.deleteById(songId);
     }
 
