@@ -1,0 +1,64 @@
+package com.tfg.music_cloud_backend.service;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.Getter;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.util.List;
+
+/*
+    Su única responsabilidad es ejecutar scripts Python externos desde Java
+    y devolver su salida como String.
+
+    No contiene lógica de negocio, por eso no tiene interfaz.
+    Es una capa de comunicación entre Spring Boot y el sistema operativo.
+
+*/
+
+@Service
+@Getter
+public class PythonService {
+
+
+    /*
+        Ruta a la carpeta scripts/ configurada en application.properties.
+        Usamos @Value en vez de @AllArgsConstructor porque @Value inyecta
+        un valor de configuración (String), no un bean de Spring.
+        Lombok no sabe manejar @Value en constructores automáticos.
+    */
+    @Value("${python.scripts.path}")
+    private String scriptsPath;
+
+    // ObjectMapper se usa para convertir JSON en objetos Java
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    public String executeScript(List<String> args) {
+        try {
+            // Construimos el comando: python scripts/search.py "arg1" "arg2"...
+            ProcessBuilder pb = new ProcessBuilder(args);
+            pb.redirectErrorStream(true); // mezcla stdout y stderr
+            Process process = pb.start();
+
+            // Leemos la salida del script
+            BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(process.getInputStream())
+            );
+
+            // Lee linea a linea la salida del script
+            StringBuilder output = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                output.append(line);
+            }
+
+            process.waitFor();
+            return output.toString(); // Devuelve la salida como un String (sera un JSON)
+
+        } catch (Exception e) {
+            throw new RuntimeException("Error executing Python script: " + e.getMessage());
+        }
+    }
+}

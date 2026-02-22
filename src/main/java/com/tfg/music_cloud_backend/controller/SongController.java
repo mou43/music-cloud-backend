@@ -3,6 +3,7 @@ package com.tfg.music_cloud_backend.controller;
 import com.tfg.music_cloud_backend.dto.SongDto;
 import com.tfg.music_cloud_backend.service.SongService;
 import lombok.AllArgsConstructor;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -68,6 +69,12 @@ public class SongController {
     public ResponseEntity<String> deleteSong(@PathVariable("id") Long songId) {
         songService.deleteSong(songId);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{id}/stream")
+    public ResponseEntity<Resource> streamSong(@PathVariable Long id,
+                                               @RequestHeader(value = "Range", required = false) String rangeHeader) {
+        return songService.streamSong(id, rangeHeader);
     }
 
 

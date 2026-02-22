@@ -1,5 +1,6 @@
 package com.tfg.music_cloud_backend.dto;
 
+import com.tfg.music_cloud_backend.entity.SongStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -27,6 +28,8 @@ public class SongDto {
     private Integer trackNumber;
     private Integer duration;
     private String filePath;
+    private String videoId;
+    private SongStatus status;
     private Long albumId;
     private String albumTitle;
     private String artistName;
