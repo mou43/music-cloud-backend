@@ -5,14 +5,14 @@ import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
 
 import java.util.List;
-
+/*
+Explicacion de la Interfaz:
+    SE DECLARAN LOS METODOS
+    Separa el qué se puede hacer del cómo se hace.
+    Esto permite cambiar implementación sin romper nada.
+*/
 public interface SongService {
-    /*
-    Explicacion de la Interfaz:
-        Define qué operaciones existen.
-        Separa el qué se puede hacer del cómo se hace.
-        Esto permite cambiar implementación sin romper nada.
-    */
+
     SongDto createSong(SongDto songDto);
 
     SongDto getSongById(Long songId);

@@ -47,15 +47,18 @@ public class PythonService {
                     new InputStreamReader(process.getInputStream())
             );
 
-            // Lee linea a linea la salida del script
-            StringBuilder output = new StringBuilder();
+            // Buscamos la línea que empieza por '{' o '[' que es el JSON real
+            String jsonLine = null;
             String line;
             while ((line = reader.readLine()) != null) {
-                output.append(line);
+                String trimmed = line.trim();
+                if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+                    jsonLine = trimmed;
+                }
             }
 
             process.waitFor();
-            return output.toString(); // Devuelve la salida como un String (sera un JSON)
+            return jsonLine != null ? jsonLine : "{}"; // Devuelve la salida como un String (sera un JSON)
 
         } catch (Exception e) {
             throw new RuntimeException("Error executing Python script: " + e.getMessage());

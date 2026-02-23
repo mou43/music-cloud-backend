@@ -25,19 +25,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
-
+/*
+Explicacion de la Interfaz:
+    SE DEFINEN (O IMPLEMENTAN) ESOS METODOS
+*/
 @Service
 public class SongServiceImpl implements SongService {
-    /*
-    Explicacion de la Clase:
-        Aquí está la lógica del programa.
-        El flujo es:
-            1- Recibe DTO
-            2- Lo convierte a Entity
-            3- Lo guarda en DB
-            4- Lo convierte otra vez a DTO
-            5- Lo devuelve
-    */
 
     /*
     NOTA SOBRE LA INYECCIÓN DE DEPENDENCIAS:
