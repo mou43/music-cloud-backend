@@ -10,7 +10,10 @@ public class ArtistMapper {
 
         return new ArtistDto(
                 artist.getId(),
-                artist.getName()
+                artist.getName(),
+                artist.getThumbnail(),
+                artist.getBanner(),
+                artist.getMonthlyListeners()
         );
     }
 
@@ -20,6 +23,9 @@ public class ArtistMapper {
         Artist artist = new Artist();
         artist.setId(artistDto.getId());
         artist.setName(artistDto.getName());
+        artist.setThumbnail(artistDto.getThumbnail());
+        artist.setBanner(artistDto.getBanner());
+        artist.setMonthlyListeners(artistDto.getMonthlyListeners());
         // No seteamos albums, se manejan con repositorios
         return artist;
     }

@@ -49,4 +49,9 @@ public class MusicSearchController {
         return ResponseEntity.accepted().build();
     }
 
+    @GetMapping("/artist")
+    public ResponseEntity<Map<String, Object>> getArtist(@RequestParam String browseId) {
+        return ResponseEntity.ok(musicSearchService.getArtist(browseId));
+    }
+
 }

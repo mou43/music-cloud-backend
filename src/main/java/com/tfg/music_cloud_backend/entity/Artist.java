@@ -23,6 +23,15 @@ public class Artist {
     @Column(name = "name", nullable = false, unique = true)
     private String name;
 
+    @Column(name = "thumbnail")
+    private String thumbnail; // imagen cuadrada para listas
+
+    @Column(name = "banner")
+    private String banner; // imagen panorámica para cabecera
+
+    @Column(name = "monthly_listeners")
+    private String monthlyListeners;
+
     @OneToMany(mappedBy = "artist", cascade = CascadeType.ALL)
     private List<Album> albums; //El campo que controla la relación está en la entidad Album y se llama "artist".
 }

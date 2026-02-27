@@ -258,6 +258,28 @@ public class MusicSearchService {
     }
 
     /*
+    getArtist() — Obtiene metadatos y discografía de un artista
+    -----------------------------------------------------------
+    Llama a get_artist.py con el browseId del artista obtenido de search.py.
+    Devuelve nombre, thumbnail, banner, monthlyListeners y lista de álbumes.
+*/
+    public Map<String, Object> getArtist(String browseId) {
+        try {
+            List<String> command = List.of(
+                    "python",
+                    pythonService.getScriptsPath() + "get_artist.py",
+                    browseId
+            );
+
+            String json = pythonService.executeScript(command);
+            return objectMapper.readValue(json, new TypeReference<>() {});
+
+        } catch (Exception e) {
+            throw new RuntimeException("Error getting artist: " + e.getMessage());
+        }
+    }
+
+    /*
         saveMetadata() — Guarda Artist, Album y Song en BDD
         ----------------------------------------------------
         Sigue el patrón "buscar o crear":
@@ -277,9 +299,50 @@ public class MusicSearchService {
         // orElseGet() ejecuta el bloque solo si el Optional está vacío (no encontrado)
         Artist artist = artistRepository.findByName(artistName)
                 .orElseGet(() -> {
-                    Artist newArtist = new Artist();
-                    newArtist.setName(artistName);
-                    return artistRepository.save(newArtist);
+                    // Obtener metadatos completos del artista desde YouTube Music
+                    try {
+                        // Necesitamos el channelId, lo obtenemos buscando el artista
+                        List<String> artistCommand = List.of(
+                                "python",
+                                pythonService.getScriptsPath() + "search.py",
+                                artistName,
+                                "artists"
+                        );
+                        String artistJson = pythonService.executeScript(artistCommand);
+                        List<Map<String, Object>> artistResults = objectMapper.readValue(artistJson, new TypeReference<>() {
+                        });
+
+                        Artist newArtist = new Artist();
+                        newArtist.setName(artistName);
+
+                        // Si encontramos el artista en YouTube Music añadimos sus metadatos
+                        if (!artistResults.isEmpty()) {
+                            Map<String, Object> artistData = artistResults.get(0);
+                            String channelId = (String) artistData.get("browseId");
+
+                            // Obtener metadatos completos con get_artist.py
+                            List<String> detailCommand = List.of(
+                                    "python",
+                                    pythonService.getScriptsPath() + "get_artist.py",
+                                    channelId
+                            );
+                            String detailJson = pythonService.executeScript(detailCommand);
+                            Map<String, Object> detailData = objectMapper.readValue(detailJson, new TypeReference<>() {
+                            });
+
+                            newArtist.setThumbnail((String) detailData.get("thumbnail"));
+                            newArtist.setBanner((String) detailData.get("banner"));
+                            newArtist.setMonthlyListeners((String) detailData.get("monthlyListeners"));
+                        }
+
+                        return artistRepository.save(newArtist);
+
+                    } catch (Exception e) {
+                        // Si falla la obtención de metadatos guardamos solo el nombre
+                        Artist newArtist = new Artist();
+                        newArtist.setName(artistName);
+                        return artistRepository.save(newArtist);
+                    }
                 });
 
         // 2. Buscar o crear Album

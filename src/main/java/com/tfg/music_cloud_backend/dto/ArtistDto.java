@@ -13,4 +13,7 @@ public class ArtistDto {
 
     private Long id;
     private String name;
+    private String thumbnail;
+    private String banner;
+    private String monthlyListeners;
 }
