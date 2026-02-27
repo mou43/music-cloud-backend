@@ -14,7 +14,7 @@ import lombok.AllArgsConstructor;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class DownloadRequest {
+public class SongDownloadRequest {
     private String videoId;         // ID de la canción en YouTube Music
     private String albumBrowseId;   // ID del álbum para get_album()
     private String title;
@@ -22,5 +22,4 @@ public class DownloadRequest {
     private String albumTitle;
     private Integer duration;
     private String thumbnail;
-    private String mode;            // "song" o "album"
 }

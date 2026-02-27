@@ -1,6 +1,7 @@
 package com.tfg.music_cloud_backend.controller;
 
-import com.tfg.music_cloud_backend.dto.DownloadRequest;
+import com.tfg.music_cloud_backend.dto.AlbumDownloadRequest;
+import com.tfg.music_cloud_backend.dto.SongDownloadRequest;
 import com.tfg.music_cloud_backend.service.MusicSearchService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -31,16 +32,21 @@ public class MusicSearchController {
         escriba en el buscador (con debounce de 500ms para no saturar).
     */
 
-    @GetMapping
-    public ResponseEntity<List<Map<String, Object>>> searchSongs(
-            @RequestParam String q) { // @RequestParam String q recibe el texto de búsqueda de la URL
-        return ResponseEntity.ok(musicSearchService.searchSongs(q)); // Devuelve 200 OK con la lista de canciones encontradas en YouTube Music
+    @GetMapping // @RequestParam String q recibe el texto de búsqueda de la URL
+    public ResponseEntity<List<Map<String, Object>>> searchSongs(@RequestParam String q, @RequestParam(required = false, defaultValue = "songs") String type) {
+        return ResponseEntity.ok(musicSearchService.searchSongs(q, type)); // Devuelve 200 OK con la lista de canciones encontradas en YouTube Music
     }
 
-    @PostMapping("/download")
-    public ResponseEntity<Void> downloadSong(@RequestBody DownloadRequest request) {
+    @PostMapping("/download/song")
+    public ResponseEntity<Void> downloadSong(@RequestBody SongDownloadRequest request) {
         musicSearchService.downloadSong(request);
         return ResponseEntity.accepted().build(); // 202 → la descarga se procesa
+    }
+
+    @PostMapping("/download/album")
+    public ResponseEntity<Void> downloadAlbum(@RequestBody AlbumDownloadRequest request) {
+        musicSearchService.downloadAlbum(request);
+        return ResponseEntity.accepted().build();
     }
 
 }

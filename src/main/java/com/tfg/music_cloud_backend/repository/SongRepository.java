@@ -11,9 +11,7 @@ public interface SongRepository extends JpaRepository<Song, Long> {
     Optional<Song> findByVideoId(String videoId);
 
     // Busca por título + álbum + artista para evitar duplicados de distinta fuente
-    Optional<Song> findByTitleAndAlbum_TitleAndAlbum_Artist_Name(
-            String title, String albumTitle, String artistName
-    );
+    Optional<Song> findByTitleAndAlbum_TitleAndAlbum_Artist_Name(String title, String albumTitle, String artistName);
 
     /*
     Explicacion de la Interfaz:

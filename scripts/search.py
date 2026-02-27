@@ -2,7 +2,6 @@ import sys
 import json
 from ytmusicapi import YTMusic
 
-#Búsqueda rápida para el cliente
 def search_songs(query):
     ytmusic = YTMusic()
     results = ytmusic.search(query, filter="songs", limit=10)
@@ -15,7 +14,7 @@ def search_songs(query):
                 "title": item.get("title"),
                 "artist": item["artists"][0]["name"] if item.get("artists") else None,
                 "albumTitle": item["album"]["name"] if item.get("album") else None,
-                "albumBrowseId": item["album"]["id"] if item.get("album") else None, # clave para get_album()
+                "albumBrowseId": item["album"]["id"] if item.get("album") else None,
                 "duration": item.get("duration_seconds"),
                 "thumbnail": item["thumbnails"][-1]["url"].split("=")[0] + "=w500-h500-l90-rj" if item.get("thumbnails") else None
             })
@@ -24,6 +23,30 @@ def search_songs(query):
 
     print(json.dumps(songs))
 
+def search_albums(query):
+    ytmusic = YTMusic()
+    results = ytmusic.search(query, filter="albums", limit=10)
+
+    albums = []
+    for item in results:
+        try:
+            albums.append({
+                "browseId": item.get("browseId"),
+                "title": item.get("title"),
+                "artist": item["artists"][0]["name"] if item.get("artists") else None,
+                "year": item.get("year"),
+                "thumbnail": item["thumbnails"][-1]["url"].split("=")[0] + "=w500-h500-l90-rj" if item.get("thumbnails") else None
+            })
+        except Exception:
+            continue
+
+    print(json.dumps(albums))
+
 if __name__ == "__main__":
     query = sys.argv[1]
-    search_songs(query)
+    search_type = sys.argv[2] if len(sys.argv) > 2 else "songs"
+
+    if search_type == "albums":
+        search_albums(query)
+    else:
+        search_songs(query)

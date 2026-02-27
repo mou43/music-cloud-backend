@@ -2,7 +2,8 @@ package com.tfg.music_cloud_backend.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tfg.music_cloud_backend.dto.DownloadRequest;
+import com.tfg.music_cloud_backend.dto.AlbumDownloadRequest;
+import com.tfg.music_cloud_backend.dto.SongDownloadRequest;
 import com.tfg.music_cloud_backend.entity.Album;
 import com.tfg.music_cloud_backend.entity.Artist;
 import com.tfg.music_cloud_backend.entity.Song;
@@ -67,16 +68,18 @@ public class MusicSearchService {
         los resultados son datos temporales que no se guardan en BDD,
         solo se muestran al cliente para que seleccione una canción.
     */
-    public List<Map<String, Object>> searchSongs(String query) {
+    public List<Map<String, Object>> searchSongs(String query, String type) {
         try {
             List<String> command = List.of(
                     "python",
                     pythonService.getScriptsPath() + "search.py",
-                    query
+                    query,
+                    type != null ? type : "songs" // por defecto busca canciones
             );
 
             String json = pythonService.executeScript(command);
-            return objectMapper.readValue(json, new TypeReference<>() {});
+            return objectMapper.readValue(json, new TypeReference<>() {
+            });
 
         } catch (Exception e) {
             throw new RuntimeException("Error searching songs: " + e.getMessage());
@@ -84,170 +87,173 @@ public class MusicSearchService {
     }
 
     /*
-        downloadSong() — Descarga una canción o álbum completo
-        -------------------------------------------------------
-        Recibe un DownloadRequest con los metadatos de la canción seleccionada
-        y el modo elegido por el usuario ("song" o "album").
+    downloadSong() — Descarga una canción individual
+    ------------------------------------------------
+    Recibe un DownloadRequest con los metadatos de la canción seleccionada.
 
-        Flujo modo "song":
-            1. Comprueba si la canción ya existe en BDD
-            2. Si no existe, descarga con download.py
-            3. Guarda los metadatos en BDD
-
-        Flujo modo "album":
-            1. Llama a get_album.py para obtener todos los tracks del álbum
-            2. Ordena los tracks poniendo la canción seleccionada primero (prioritaria)
-            3. Por cada track comprueba si existe en BDD
-            4. Descarga solo los que faltan
-            5. Guarda los metadatos de cada uno en BDD
+    Flujo:
+        1. Comprueba si la canción ya existe en BDD por videoId
+        2. Comprueba si ya existe por title + album + artista (distinta fuente)
+        3. Obtiene metadatos completos del álbum via get_album.py (year, trackNumber)
+        4. Descarga el MP3 via download.py
+        5. Guarda los metadatos en BDD con status READY
     */
-    public void downloadSong(DownloadRequest request) {
+    public void downloadSong(SongDownloadRequest request) {
         try {
-            if ("album".equals(request.getMode())) {
 
-                // 1. Obtener lista de tracks del álbum via get_album.py
-                List<String> albumCommand = List.of(
-                        "python",
-                        pythonService.getScriptsPath() + "get_album.py",
-                        request.getAlbumBrowseId()
-                );
-                String albumJson = pythonService.executeScript(albumCommand);
-
-                // Parseamos el JSON del álbum a un Map para acceder a sus campos
-                Map<String, Object> albumData = objectMapper.readValue(albumJson, new TypeReference<>() {});
-                List<Map<String, Object>> tracks = (List<Map<String, Object>>) albumData.get("tracks");
-
-                // 2. Canción seleccionada por el usuario va primero (prioridad de descarga)
-                tracks.sort((a, b) -> {
-                    String id = request.getVideoId();
-                    if (id.equals(a.get("videoId"))) return -1;
-                    if (id.equals(b.get("videoId"))) return 1;
-                    return 0;
-                });
-                System.out.println("VideoId prioritario: " + request.getVideoId());
-                tracks.forEach(t -> System.out.println("Track: " + t.get("title") + " → " + t.get("videoId")));
-
-                // Año del álbum, viene como String de ytmusicapi, lo convertimos a Integer
-                Integer albumYear = null;
-                if (albumData.get("year") != null) {
-                    albumYear = Integer.parseInt((String) albumData.get("year"));
-                }
-                String albumThumbnail = (String) albumData.get("thumbnail");
-
-                // 3. Por cada track del álbum
-                for (Map<String, Object> track : tracks) {
-                    String videoId = (String) track.get("videoId");
-                    String title = (String) track.get("title");
-
-                    if (videoId == null) continue;
-
-                    // Comprobación 1 — mismo videoId
-                    if (songRepository.findByVideoId(videoId).isPresent()) {
-                        System.out.println("Ya existe por videoId, omitiendo: " + title);
-                        continue;
-                    }
-
-                    // Comprobación 2 — mismo title + album + artista (distinta fuente)
-                    if (songRepository.findByTitleAndAlbum_TitleAndAlbum_Artist_Name(
-                            title, request.getAlbumTitle(), request.getArtist()).isPresent()) {
-                        System.out.println("Ya existe por título+álbum+artista, omitiendo: " + title);
-                        continue;
-                    }
-
-                    // 4. Descargar la canción
-                    List<String> command = List.of(
-                            "python",
-                            pythonService.getScriptsPath() + "download.py",
-                            videoId,
-                            storagePath,
-                            request.getArtist(),
-                            request.getAlbumTitle()
-                    );
-                    String resultJson = pythonService.executeScript(command);
-                    Map<String, Object> resultMap = objectMapper.readValue(resultJson, new TypeReference<>() {});
-
-                    // 5. Si la descarga fue exitosa guardamos los metadatos en BDD
-                    if ("ok".equals(resultMap.get("status"))) {
-                        saveMetadata(
-                                title,
-                                (Integer) track.get("trackNumber"),
-                                (Integer) track.get("duration"),
-                                (String) resultMap.get("filePath"),
-                                videoId,
-                                request.getArtist(),
-                                request.getAlbumTitle(),
-                                albumYear,
-                                albumThumbnail
-                        );
-                    }
-                }
-
-            } else {
-                // Modo canción individual
-
-                // Comprobación 1 — mismo videoId
-                if (songRepository.findByVideoId(request.getVideoId()).isPresent()) {
-                    System.out.println("Canción ya existe por videoId, omitiendo.");
-                    return;
-                }
-
-                // Comprobación 2 — mismo title + album + artista (distinta fuente)
-                if (songRepository.findByTitleAndAlbum_TitleAndAlbum_Artist_Name(
-                        request.getTitle(), request.getAlbumTitle(), request.getArtist()).isPresent()) {
-                    System.out.println("Canción ya existe por título+álbum+artista, omitiendo.");
-                    return;
-                }
-
-                // Obtener metadatos completos del álbum para tener year y trackNumber
-                List<String> albumCommand = List.of(
-                        "python",
-                        pythonService.getScriptsPath() + "get_album.py",
-                        request.getAlbumBrowseId()
-                );
-                String albumJson = pythonService.executeScript(albumCommand);
-                Map<String, Object> albumData = objectMapper.readValue(albumJson, new TypeReference<>() {});
-
-                // Buscar el track específico dentro del álbum
-                List<Map<String, Object>> tracks = (List<Map<String, Object>>) albumData.get("tracks");
-                Map<String, Object> trackData = tracks.stream()
-                        .filter(t -> request.getVideoId().equals(t.get("videoId")))
-                        .findFirst()
-                        .orElse(null);
-
-                Integer trackNumber = trackData != null ? (Integer) trackData.get("trackNumber") : null;
-                Integer duration = trackData != null ? (Integer) trackData.get("duration") : request.getDuration();
-                Integer albumYear = albumData.get("year") != null ?
-                        Integer.parseInt((String) albumData.get("year")) : null;
-                String albumThumbnail = (String) albumData.get("thumbnail");
-
-                // Descargar la canción
-                List<String> command = List.of(
-                        "python",
-                        pythonService.getScriptsPath() + "download.py",
-                        request.getVideoId(),
-                        storagePath,
-                        request.getArtist(),
-                        request.getAlbumTitle()
-                );
-                String json = pythonService.executeScript(command);
-                Map<String, Object> resultMap = objectMapper.readValue(json, new TypeReference<>() {});
-
-                // Si la descarga fue exitosa guardamos los metadatos en BDD
-                saveMetadata(
-                        request.getTitle(),
-                        trackNumber,
-                        duration, // ← variable calculada desde get_album.py
-                        (String) resultMap.get("filePath"),
-                        request.getVideoId(),
-                        request.getArtist(),
-                        request.getAlbumTitle(),
-                        albumYear,
-                        albumThumbnail // ← también usa albumThumbnail en vez de request.getThumbnail()
-                );
+            // Comprobación 1 — mismo videoId
+            if (songRepository.findByVideoId(request.getVideoId()).isPresent()) {
+                System.out.println("Canción ya existe por videoId, omitiendo.");
+                return;
             }
+
+            // Comprobación 2 — mismo title + album + artista (distinta fuente)
+            if (songRepository.findByTitleAndAlbum_TitleAndAlbum_Artist_Name(
+                    request.getTitle(), request.getAlbumTitle(), request.getArtist()).isPresent()) {
+                System.out.println("Canción ya existe por título+álbum+artista, omitiendo.");
+                return;
+            }
+
+            // Obtener metadatos completos del álbum para tener year y trackNumber
+            List<String> albumCommand = List.of(
+                    "python",
+                    pythonService.getScriptsPath() + "get_album.py",
+                    request.getAlbumBrowseId()
+            );
+            String albumJson = pythonService.executeScript(albumCommand);
+            //System.out.println("Album JSON recibido: " + albumJson);
+            Map<String, Object> albumData = objectMapper.readValue(albumJson, new TypeReference<>() {
+            });
+
+            // Buscar el track específico dentro del álbum
+            List<Map<String, Object>> tracks = (List<Map<String, Object>>) albumData.get("tracks");
+            // Buscar el track específico dentro del álbum por título
+            Map<String, Object> trackData = tracks.stream()
+                    .filter(t -> request.getTitle().equalsIgnoreCase((String) t.get("title")))
+                    .findFirst()
+                    .orElse(null);
+
+            Integer trackNumber = trackData != null ? (Integer) trackData.get("trackNumber") : null;
+            Integer duration = trackData != null ? (Integer) trackData.get("duration") : request.getDuration();
+            Integer albumYear = albumData.get("year") != null ?
+                    Integer.parseInt((String) albumData.get("year")) : null;
+            String albumThumbnail = (String) albumData.get("thumbnail");
+            //System.out.println("trackData encontrado: " + trackData);
+            //System.out.println("trackNumber: " + trackNumber);
+            // Descargar la canción
+            List<String> command = List.of(
+                    "python",
+                    pythonService.getScriptsPath() + "download.py",
+                    request.getVideoId(),
+                    storagePath,
+                    request.getArtist(),
+                    request.getAlbumTitle(),
+                    request.getTitle()
+            );
+            String json = pythonService.executeScript(command);
+            Map<String, Object> resultMap = objectMapper.readValue(json, new TypeReference<>() {
+            });
+
+            // Si la descarga fue exitosa guardamos los metadatos en BDD
+            saveMetadata(
+                    request.getTitle(),
+                    trackNumber,
+                    duration, // ← variable calculada desde get_album.py
+                    (String) resultMap.get("filePath"),
+                    request.getVideoId(),
+                    request.getArtist(),
+                    request.getAlbumTitle(),
+                    albumYear,
+                    albumThumbnail // ← también usa albumThumbnail en vez de request.getThumbnail()
+            );
 
         } catch (Exception e) {
             throw new RuntimeException("Error downloading song: " + e.getMessage());
+        }
+    }
+
+    /*
+    downloadAlbum() — Descarga un álbum completo
+    ---------------------------------------------
+    Recibe un AlbumDownloadRequest con el browseId, artista y título del álbum.
+
+    Flujo:
+        1. Obtiene todos los tracks del álbum via get_album.py
+        2. Por cada track comprueba si ya existe en BDD
+        3. Descarga solo los que faltan
+        4. Guarda los metadatos de cada uno en BDD con status READY
+*/
+    public void downloadAlbum(AlbumDownloadRequest request) {
+        try {
+            // 1. Obtener lista de tracks del álbum via get_album.py
+            List<String> albumCommand = List.of(
+                    "python",
+                    pythonService.getScriptsPath() + "get_album.py",
+                    request.getBrowseId()
+            );
+            String albumJson = pythonService.executeScript(albumCommand);
+            //System.out.println("Album JSON recibido: " + albumJson);
+            Map<String, Object> albumData = objectMapper.readValue(albumJson, new TypeReference<>() {
+            });
+            List<Map<String, Object>> tracks = (List<Map<String, Object>>) albumData.get("tracks");
+
+            Integer albumYear = albumData.get("year") != null ?
+                    Integer.parseInt((String) albumData.get("year")) : null;
+            String albumThumbnail = (String) albumData.get("thumbnail");
+
+            // 2. Por cada track comprobar si existe y descargar si no
+            for (Map<String, Object> track : tracks) {
+                String videoId = (String) track.get("videoId");
+                String title = (String) track.get("title");
+
+                if (videoId == null) continue;
+
+                // Comprobación 1 — mismo videoId
+                if (songRepository.findByVideoId(videoId).isPresent()) {
+                    System.out.println("Ya existe por videoId, omitiendo: " + title);
+                    continue;
+                }
+
+                // Comprobación 2 — mismo title + album + artista
+                if (songRepository.findByTitleAndAlbum_TitleAndAlbum_Artist_Name(
+                        title, request.getTitle(), request.getArtist()).isPresent()) {
+                    System.out.println("Ya existe por título+álbum+artista, omitiendo: " + title);
+                    continue;
+                }
+
+                // 3. Descargar la canción
+                List<String> command = List.of(
+                        "python",
+                        pythonService.getScriptsPath() + "download.py",
+                        videoId,
+                        storagePath,
+                        request.getArtist(),
+                        request.getTitle(),
+                        title
+                );
+                String resultJson = pythonService.executeScript(command);
+                //System.out.println("Result JSON recibido: " + resultJson);
+                Map<String, Object> resultMap = objectMapper.readValue(resultJson, new TypeReference<>() {
+                });
+
+                // 4. Si la descarga fue exitosa guardamos los metadatos en BDD
+                if ("ok".equals(resultMap.get("status"))) {
+                    saveMetadata(
+                            title,
+                            (Integer) track.get("trackNumber"),
+                            (Integer) track.get("duration"),
+                            (String) resultMap.get("filePath"),
+                            videoId,
+                            request.getArtist(),
+                            request.getTitle(),
+                            albumYear,
+                            albumThumbnail
+                    );
+                }
+            }
+
+        } catch (Exception e) {
+            throw new RuntimeException("Error downloading album: " + e.getMessage());
         }
     }
 
@@ -259,7 +265,7 @@ public class MusicSearchService {
             - Si el Album ya existe en BDD lo reutiliza, si no lo crea
             - Siempre crea una Song nueva con status READY y el filePath del HDD
 
-        Este método es privado porque solo lo usa esta clase internamente,
+        Este metodo es privado porque solo lo usa esta clase internamente,
         no debe ser accesible desde fuera del servicio.
     */
     private void saveMetadata(String title, Integer trackNumber, Integer duration,
