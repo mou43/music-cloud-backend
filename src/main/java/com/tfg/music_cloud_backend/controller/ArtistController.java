@@ -1,5 +1,6 @@
 package com.tfg.music_cloud_backend.controller;
 
+import com.tfg.music_cloud_backend.dto.AlbumDto;
 import com.tfg.music_cloud_backend.dto.ArtistDto;
 import com.tfg.music_cloud_backend.service.ArtistService;
 import lombok.AllArgsConstructor;
@@ -48,5 +49,11 @@ public class ArtistController {
     public ResponseEntity<String> deleteArtist(@PathVariable Long id) {
         artistService.deleteArtist(id);
         return ResponseEntity.noContent().build();
+    }
+
+    // ArtistController
+    @GetMapping("/{id}/albums")
+    public ResponseEntity<List<AlbumDto>> getAlbumsByArtistId(@PathVariable Long id) {
+        return ResponseEntity.ok(artistService.getAlbumsByArtistId(id));
     }
 }

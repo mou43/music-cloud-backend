@@ -1,9 +1,13 @@
 package com.tfg.music_cloud_backend.service.impl;
 
+import com.tfg.music_cloud_backend.dto.AlbumDto;
 import com.tfg.music_cloud_backend.dto.ArtistDto;
+import com.tfg.music_cloud_backend.entity.Album;
 import com.tfg.music_cloud_backend.entity.Artist;
 import com.tfg.music_cloud_backend.exception.ResourceNotFoundException;
+import com.tfg.music_cloud_backend.mapper.AlbumMapper;
 import com.tfg.music_cloud_backend.mapper.ArtistMapper;
+import com.tfg.music_cloud_backend.repository.AlbumRepository;
 import com.tfg.music_cloud_backend.repository.ArtistRepository;
 import com.tfg.music_cloud_backend.service.ArtistService;
 import lombok.AllArgsConstructor;
@@ -17,6 +21,7 @@ import java.util.stream.Collectors;
 public class ArtistServiceImpl implements ArtistService {
 
     private final ArtistRepository artistRepository;
+    private final AlbumRepository albumRepository;
 
     @Override
     public ArtistDto createArtist(ArtistDto artistDto) {
@@ -70,5 +75,18 @@ public class ArtistServiceImpl implements ArtistService {
                 ));
 
         artistRepository.delete(artist);
+    }
+
+    @Override
+    public List<AlbumDto> getAlbumsByArtistId(Long artistId) {
+        artistRepository.findById(artistId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Artist does not exist with given id: " + artistId
+                ));
+
+        List<Album> albums = albumRepository.findByArtistId(artistId);
+        return albums.stream()
+                .map(AlbumMapper::mapToAlbumDto)
+                .collect(Collectors.toList());
     }
 }

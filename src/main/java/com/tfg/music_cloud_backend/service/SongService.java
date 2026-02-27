@@ -25,7 +25,6 @@ public interface SongService {
 
     ResponseEntity<Resource> streamSong(Long songId, String rangeHeader);
 
-    // IMPLEMENTAR EN EL FUTURO
-    //SongDto updateSongStatus(Long songId, SongStatus status);
+    List<SongDto> getSongsByAlbumId(Long albumId);
 
 }

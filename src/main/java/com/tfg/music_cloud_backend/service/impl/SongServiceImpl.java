@@ -196,4 +196,17 @@ public class SongServiceImpl implements SongService {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+    @Override
+    public List<SongDto> getSongsByAlbumId(Long albumId) {
+        albumRepository.findById(albumId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Album does not exist with given id: " + albumId
+                ));
+
+        List<Song> songs = songRepository.findByAlbumId(albumId);
+        return songs.stream()
+                .map(SongMapper::mapToSongDto)
+                .collect(Collectors.toList());
+    }
 }
